@@ -8,7 +8,7 @@
 
 Vocalance is distributed **"AS IS"**, without warranty of any kind. To the maximum extent permitted by applicable law:
 
-- There is **no guarantee** that Vocalance will work correctly, continuously, or without error on your specific hardware, Windows configuration, or with any particular application.
+- There is **no guarantee** that Vocalance will work correctly, continuously, or without error on your specific hardware, Windows or macOS configuration, or with any particular application.
 - There is **no guarantee** of fitness for any purpose, including medical, accessibility, or professional use.
 - There is **no guarantee** of accuracy from any speech recognition, language model, or sound recognition component.
 
@@ -94,6 +94,10 @@ Vocalance downloads AI model files on first launch only, to your local machine. 
   ```
   C:\Users\<YourUsername>\AppData\Roaming\Vocalance\llm_models\
   ```
+  On macOS this is:
+  ```
+  ~/Library/Application Support/Vocalance/llm_models/
+  ```
 - Additional language models are available for download through the settings UI. The user must explicitly click download for any additional model to be fetched. All additional models are also downloaded from Hugging Face.
 - **Note on Hugging Face download statistics:** Hugging Face Hub records download counts for hosted model files. When Vocalance downloads a model on your behalf, Hugging Face registers one download event. No personal information from Vocalance is transmitted; this is solely Hugging Face's own infrastructure telemetry. See [Hugging Face's Privacy Policy](https://huggingface.co/privacy) for details.
 
@@ -105,10 +109,11 @@ Vocalance writes user data exclusively to your local machine. **Nothing in this 
 
 ### 7.1 User Data Root Directory
 
-All Vocalance user data is stored under:
+All Vocalance user data is stored under the OS user-data root:
 
 ```
-%APPDATA%\Vocalance\
+Windows:  %APPDATA%\Vocalance\
+macOS:    ~/Library/Application Support/Vocalance/
 ```
 
 On most Windows installations this resolves to:
@@ -117,7 +122,7 @@ On most Windows installations this resolves to:
 C:\Users\<YourUsername>\AppData\Roaming\Vocalance\
 ```
 
-To navigate there directly: open **File Explorer**, click the address bar, and paste `%APPDATA%\Vocalance`.
+To navigate there directly on Windows: open **File Explorer**, click the address bar, and paste `%APPDATA%\Vocalance`. On macOS, open Finder, Go → Go to Folder, and paste `~/Library/Application Support/Vocalance`.
 
 ### 7.2 File Inventory
 
@@ -143,6 +148,8 @@ If a developer or advanced user explicitly enables logging by modifying the `ena
 ```
 %APPDATA%\Vocalance\logs\<timestamp>\app.log
 ```
+
+On macOS the same files live under `~/Library/Application Support/Vocalance/logs/`.
 
 This applies only when `enable_logs` is set to `true`, which requires direct modification of the source code or configuration file. This setting is `false` by default and will not be active in a standard installation.
 

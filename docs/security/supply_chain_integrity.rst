@@ -15,16 +15,18 @@ its recorded hash before installation — a mismatch is a hard error.
 UV Bootstrap
 ============
 
-The installation script ``setup.ps1`` bootstraps ``uv`` by downloading the official
+The Windows installation script ``setup.ps1`` bootstraps ``uv`` by downloading the official
 ``uv-{arch}-pc-windows-msvc.zip`` binary archive from GitHub releases. The
 archive is never executed. ``uv.exe`` is extracted from it and placed inside
 the Vocalance install tree at ``%LOCALAPPDATA%\Programs\Vocalance\tools\uv.exe``.
+The macOS installer ``setup.sh`` does the same with ``uv-aarch64-apple-darwin.tar.gz``,
+placing ``uv`` at ``~/Library/Application Support/Vocalance/runtime/tools/uv``.
 No system-wide UV installation occurs.
 
 Before extraction, the script verifies the archive's SHA-256 against a value
-computed offline and hard-coded at development time:
+computed offline and hard-coded at development time.
 
-.. code-block:: powershell
+Windows (``setup.ps1``)::
 
    $UV_VERSION    = '0.11.22'
    $UV_ZIP_SHA256 = @{
@@ -32,16 +34,17 @@ computed offline and hard-coded at development time:
        'aarch64' = '<hex digest>'
    }
 
-   $actual = (Get-FileHash -Path $uvZipPath -Algorithm SHA256).Hash.ToLower()
-   if ($actual -ne $UV_ZIP_SHA256[$arch].ToLower()) {
-       Remove-Item -LiteralPath $uvZipPath -Force -ErrorAction SilentlyContinue
-       throw "Integrity check failed ..."
-   }
+macOS (``setup.sh``)::
+
+   UV_VERSION='0.11.22'
+   UV_ARCHIVE_SHA256='<hex digest>'
 
 The hashes are produced by
 `scripts/security/compute_uv_binary_hash.ps1 <https://github.com/rick12000/vocalance/blob/main/scripts/security/compute_uv_binary_hash.ps1>`_
-whenever a developer bumps ``$UV_VERSION``. A mismatch deletes the downloaded
-archive and aborts setup; ``uv.exe`` is never extracted from an unverified
+(Windows archives, or ``-Os macos``) or
+`scripts/security/compute_uv_binary_hash.sh <https://github.com/rick12000/vocalance/blob/main/scripts/security/compute_uv_binary_hash.sh>`_
+(Darwin aarch64) whenever a developer bumps the UV version. A mismatch deletes the downloaded
+archive and aborts setup; ``uv`` is never extracted from an unverified
 archive.
 
 AI Models

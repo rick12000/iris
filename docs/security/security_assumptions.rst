@@ -14,7 +14,7 @@ before use. Full details of each control are documented in
 :doc:`supply_chain_integrity`.
 
 Hash verification is not applied to the Vocalance release zip itself because
-both the zip and any hash embedded in ``setup.ps1`` originate from the same
+both the zip and any hash embedded in the installer originate from the same
 GitHub release. If that release were compromised, both would be replaced
 simultaneously, making the check self-referential and worthless.
 
@@ -31,7 +31,7 @@ Examples:
      - SHA-256 per wheel in ``uv.lock``; ``uv sync --frozen`` refuses to install
        a wheel whose hash does not match.
    * - ``uv`` binary
-     - SHA-256 hard-coded in ``setup.ps1``, computed offline against Astral's
+     - SHA-256 hard-coded in ``setup.ps1`` / ``setup.sh``, computed offline against Astral's
        independent GitHub release; mismatch aborts setup and deletes the archive.
    * - AI model files (``.gguf``)
      - SHA-256 per file hard-coded in the allowlist in ``app_config.py``;

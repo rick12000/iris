@@ -1,6 +1,6 @@
 import pytest
 
-from vocalance.app.config.hotkey_validation import is_allowed_key, is_valid_custom_hotkey
+from vocalance.app.config.hotkey_validation import custom_hotkey_error_message, custom_hotkey_placeholder, is_allowed_key, is_valid_custom_hotkey
 
 
 @pytest.mark.parametrize(
@@ -51,3 +51,16 @@ def test_is_valid_custom_hotkey_accepts_single_chord(value):
 )
 def test_is_valid_custom_hotkey_rejects_invalid(value):
     assert is_valid_custom_hotkey(value) is False
+
+
+@pytest.mark.parametrize("macos, modifier", [(False, "ctrl"), (True, "command")])
+def test_custom_hotkey_placeholder_uses_primary_modifier(macos, modifier, monkeypatch):
+    monkeypatch.setattr("vocalance.app.config.hotkey_validation.running_on_macos", lambda: macos)
+    monkeypatch.setattr("vocalance.app.config.hotkey_validation.primary_modifier_key", lambda: modifier)
+    assert custom_hotkey_placeholder() == f"e.g. {modifier}+alt+7"
+    assert modifier in custom_hotkey_error_message()
+
+
+@pytest.mark.parametrize("value", ["command+c", "command+shift+z", "ctrl+alt+7"])
+def test_is_valid_custom_hotkey_accepts_command_chords(value):
+    assert is_valid_custom_hotkey(value) is True

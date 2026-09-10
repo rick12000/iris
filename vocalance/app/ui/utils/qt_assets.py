@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QImage, QPixmap
 
 from vocalance.app.config.app_config import AssetPathsConfig
+from vocalance.app.config.os_defaults import application_icon_filename
 from vocalance.app.ui.qt_theme import theme
 from vocalance.app.ui.utils.qt_dpi_utils import get_device_pixel_ratio, load_pixmap_high_dpi
 
@@ -211,7 +212,7 @@ class QtAssetCache:
         """
         if not self._assets_path:
             return None
-        icon_path = self._assets_path / "icon.ico"
+        icon_path = self._assets_path / application_icon_filename()
         return icon_path if icon_path.exists() else None
 
     def get_icons_dir(self) -> Path:

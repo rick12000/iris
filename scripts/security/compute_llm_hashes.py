@@ -13,6 +13,8 @@ import hashlib
 import os
 import sys
 
+from vocalance.app.config.os_defaults import APPLICATION_DIR_NAME, user_data_parent_dir
+
 MODELS = [
     {
         "artifact_id": "qwen2.5-1.5b-q5km",
@@ -30,11 +32,7 @@ MODELS = [
 
 
 def models_dir() -> str:
-    if os.name == "nt":
-        base = os.environ.get("APPDATA", os.path.expanduser("~"))
-    else:
-        base = os.path.expanduser("~")
-    return os.path.join(base, "Vocalance", "llm_models")
+    return os.path.join(user_data_parent_dir(), APPLICATION_DIR_NAME, "llm_models")
 
 
 def sha256_of_file(path: str) -> str:

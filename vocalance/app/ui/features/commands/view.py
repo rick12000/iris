@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from PySide6.QtWidgets import QDialog, QMessageBox, QVBoxLayout, QWidget
 
 from vocalance.app.config.command_types import AutomationCommand
-from vocalance.app.config.hotkey_validation import is_valid_custom_hotkey
+from vocalance.app.config.hotkey_validation import custom_hotkey_error_message, custom_hotkey_placeholder, is_valid_custom_hotkey
 from vocalance.app.ui.application.base_view import QtBaseView
 from vocalance.app.ui.components.buttons import ChangeButton, DangerButton, PrimaryButton
 from vocalance.app.ui.components.dialogs import CommandEditDialog
@@ -58,7 +58,7 @@ class QtCommandsView(QtBaseView):
 
         hotkey_label = SmallLabel("Hotkey:")
         content.add(hotkey_label)
-        self.hotkey_entry = TextInput(placeholder="e.g. ctrl+alt+7")
+        self.hotkey_entry = TextInput(placeholder=custom_hotkey_placeholder())
         content.add(self.hotkey_entry)
 
         self.add_btn = PrimaryButton(text="Add")
@@ -183,7 +183,7 @@ class QtCommandsView(QtBaseView):
             QMessageBox.warning(
                 self,
                 "Invalid Hotkey",
-                "Use letters, numbers, modifiers (ctrl, alt, shift, win) or function keys joined with '+', e.g. ctrl+alt+7.",
+                custom_hotkey_error_message(),
             )
             return
 

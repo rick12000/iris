@@ -837,6 +837,7 @@ def parser_triggers():
         mark_cancel_visualize_phrases=("cancel marks", "hide marks"),
         dictation_start_trigger="green",
         dictation_stop_trigger="amber",
+        dictation_pause_trigger="yellow",
         dictation_type_trigger="type",
         dictation_smart_trigger="smart green",
         dictation_visual_trigger="visual green",
@@ -1102,3 +1103,65 @@ def recording_resource_factory(teardown_sink):
         return _RecordingResource(tag, mode=mode)
 
     return _make
+
+
+@pytest.fixture
+def windows_platform(monkeypatch):
+    import vocalance.app.config.os_defaults as os_defaults
+
+    monkeypatch.setattr(os_defaults.sys, "platform", "win32")
+    monkeypatch.setenv("APPDATA", r"C:\Users\test\AppData\Roaming")
+    monkeypatch.setenv("LOCALAPPDATA", r"C:\Users\test\AppData\Local")
+
+
+@pytest.fixture
+def macos_platform(monkeypatch):
+    import vocalance.app.config.os_defaults as os_defaults
+
+    monkeypatch.setattr(os_defaults.sys, "platform", "darwin")
+
+
+@pytest.fixture
+def dictation_text_input_macos(monkeypatch):
+    monkeypatch.setattr("vocalance.app.config.os_defaults.running_on_macos", lambda: True)
+    from vocalance.app.config.app_config import DictationConfig
+    from vocalance.app.services.dictation_flow.text_input_service import DictationTextInput
+
+    config = DictationConfig(
+        use_clipboard=True,
+        typing_delay=0.0,
+        type_text_post_delay=0.0,
+        clipboard_paste_delay_pre=0.0,
+        clipboard_paste_delay_post=0.0,
+        pyautogui_pause=0.0,
+    )
+
+    async def _run(fn, *args, **kwargs):
+        return fn(*args, **kwargs)
+
+    input_service = Mock()
+    input_service.run = _run
+    return DictationTextInput(config=config, input_service=input_service)
+
+
+@pytest.fixture
+def dictation_text_input_windows(monkeypatch):
+    monkeypatch.setattr("vocalance.app.config.os_defaults.running_on_macos", lambda: False)
+    from vocalance.app.config.app_config import DictationConfig
+    from vocalance.app.services.dictation_flow.text_input_service import DictationTextInput
+
+    config = DictationConfig(
+        use_clipboard=True,
+        typing_delay=0.0,
+        type_text_post_delay=0.0,
+        clipboard_paste_delay_pre=0.0,
+        clipboard_paste_delay_post=0.0,
+        pyautogui_pause=0.0,
+    )
+
+    async def _run(fn, *args, **kwargs):
+        return fn(*args, **kwargs)
+
+    input_service = Mock()
+    input_service.run = _run
+    return DictationTextInput(config=config, input_service=input_service)

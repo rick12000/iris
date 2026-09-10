@@ -24,9 +24,11 @@ To find out more about what Vocalance can do, including detailed instructions an
 
 ## 💻 Installation
 
-Vocalance can be set up entirely from the source code in this repository (currently only supported on Windows).
+Vocalance can be set up entirely from the source code in this repository on **Windows 10/11** and **recent macOS on Apple Silicon**.
 
 ### ✨ **Easy Setup (Recommended)**
+
+#### Windows
 
 > [!IMPORTANT]
 > If you want to enable AI features, ensure [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) are installed — download the installer, run it, and tick "**Desktop development with C++**" under workloads.
@@ -59,6 +61,33 @@ To get started with installation, either follow the steps below or watch the [in
    - If the application doesn't appear immediately after you clicked it, *wait 10-15 seconds before retrying*, it may be loading in the background.
    - If you enabled LLM features, the application needs to **download** your local AI model from a trusted *Hugging Face* repository on first use. **Do not close** the startup window during this process — allow up to 30 minutes depending on your internet connection (around 5 minutes for most users).
 
+#### macOS (Apple Silicon)
+
+> [!IMPORTANT]
+> Grant **Microphone** and **Accessibility** access when macOS prompts, or in **System Settings → Privacy & Security**. Without Accessibility, mouse and keyboard automation will not work. If you want to enable AI features, install [Xcode Command Line Tools](https://developer.apple.com/xcode/resources/) (`xcode-select --install`).
+
+1. Open Terminal.
+
+2. Paste and run:
+
+    ```bash
+    curl -fsSL "https://github.com/rick12000/vocalance/releases/latest/download/setup.sh" -o vocalance-setup.sh && bash vocalance-setup.sh
+    ```
+
+   *If you'd like to inspect what the script will do before running it, view [scripts/bootstrapping/setup.sh](scripts/bootstrapping/setup.sh) in this repository.*
+
+   > **Optional:** To install a specific release instead of the latest, replace `latest/download` with `download/vX.Y.Z` in the URL — for example:
+   > ```bash
+   > curl -fsSL "https://github.com/rick12000/vocalance/releases/download/v0.1.0/setup.sh" -o vocalance-setup.sh && bash vocalance-setup.sh
+   > ```
+
+   During setup you will be asked whether to enable LLM features. Answer **yes** if you want to enable AI dictation and AI text editing functionality, otherwise answer **no**.
+
+3. Open Vocalance from `~/Applications/Vocalance.app`.
+
+   - If the application doesn't appear immediately after you clicked it, *wait 10-15 seconds before retrying*, it may be loading in the background.
+   - If you enabled LLM features, the application needs to **download** your local AI model from a trusted *Hugging Face* repository on first use. **Do not close** the startup window during this process — allow up to 30 minutes depending on your internet connection (around 5 minutes for most users).
+
 Then you're good to go! If you haven't already, refer to Vocalance's official website for [instructions](https://rick12000.github.io/vocalance-launch-site/instructions.html) on how everything works.
 
 Having issues with the installation steps? Reach out at: vocalance.contact@gmail.com
@@ -68,7 +97,7 @@ Having issues with the installation steps? Reach out at: vocalance.contact@gmail
 ### 🛠️ **Developer Setup**
 
 > [!IMPORTANT]
-> If you want to enable AI features, ensure [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) are installed — download the installer, run it, and tick "**Desktop development with C++**" under workloads. Then install with `uv sync --extra llm` instead of `uv sync --active`.
+> If you want to enable AI features on Windows, ensure [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) are installed (tick "**Desktop development with C++**"). On macOS, install Xcode Command Line Tools. Then install with `uv sync --extra llm` instead of `uv sync --active`.
 
 #### 1. Set Up UV
 
@@ -132,13 +161,25 @@ If you're more familiar with a mixture of a virtual environment manager (eg. `ve
 
 ### 🧹 Cleanup
 
-To uninstall Vocalance completely, download and run the cleanup script:
+To uninstall Vocalance completely, download and run the cleanup script for your OS:
+
+**Windows**
 
 ```powershell
 Invoke-WebRequest -Uri "https://github.com/rick12000/vocalance/releases/latest/download/cleanup.ps1" -OutFile "vocalance-cleanup.ps1"; powershell -ExecutionPolicy Bypass -File .\vocalance-cleanup.ps1
 ```
 
-This removes the application files (`%LOCALAPPDATA%\Programs\Vocalance\`), user data (`%APPDATA%\Vocalance\`), and the Start Menu shortcut. It does not remove system-level tools such as UV.
+This removes the application files (`%LOCALAPPDATA%\Programs\Vocalance\`), user data (`%APPDATA%\Vocalance\`), and the Start Menu shortcut.
+
+**macOS**
+
+```bash
+curl -fsSL "https://github.com/rick12000/vocalance/releases/latest/download/cleanup.sh" -o vocalance-cleanup.sh && bash vocalance-cleanup.sh
+```
+
+This removes `~/Applications/Vocalance.app` and `~/Library/Application Support/Vocalance/` (runtime install plus user data).
+
+Neither script removes system-level tools such as UV.
 
 
 ## ⚠️ Disclaimers
@@ -147,7 +188,8 @@ Vocalance is distributed under a GPLv3 license. It makes use of your microphone 
 
 ## 🔧 System Requirements
 
-- **Operating System**: Windows 10/11 (macOS and Linux support planned)
+- **Operating System**: Windows 10/11, or a recent macOS release on Apple Silicon. Linux is not supported.
+- **macOS permissions**: Microphone and Accessibility (System Settings → Privacy & Security)
 - **RAM**: 1GB RAM
 - **Disk**: 3GB
 - **Hardware**: It is **strongly** recommended to purchase a reasonably good headset or microphone to improve Vocalance outputs and recognition, but it will still work without this.

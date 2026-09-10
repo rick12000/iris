@@ -80,8 +80,8 @@ Runs on push to ``main`` only and:
 
   - ``vocalance-v{VERSION}.zip``
   - ``vocalance-v{VERSION}.zip.sha256``
-  - ``setup.ps1`` — standalone installer script
-  - ``cleanup.ps1`` — standalone uninstaller script
+  - ``setup.ps1`` / ``cleanup.ps1`` — Windows installer and uninstaller
+  - ``setup.sh`` / ``cleanup.sh`` — macOS installer and uninstaller
 
 A developer then reviews the draft, writes the release notes, and publishes. Once
 published, the release is **immutable**: it cannot be edited or deleted.

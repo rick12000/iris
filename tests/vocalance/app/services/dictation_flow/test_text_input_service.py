@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch
 from conftest import skip_if_headless
 
 skip_if_headless()
@@ -90,3 +91,27 @@ async def test_input_text_no_period_when_first_word_is_all_caps(first_word, dict
 
     backspaces = [c for c in press.call_args_list if c.args and c.args[0] == "backspace"]
     assert len(backspaces) == 0
+
+
+@pytest.mark.parametrize(
+    "fixture_name, modifier",
+    [
+        ("dictation_text_input_windows", "ctrl"),
+        ("dictation_text_input_macos", "command"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_clipboard_paste_uses_os_primary_modifier(fixture_name, modifier, request):
+    text_input = request.getfixturevalue(fixture_name)
+    with (
+        patch("vocalance.app.services.dictation_flow.text_input_service.pyperclip.paste", return_value=""),
+        patch("vocalance.app.services.dictation_flow.text_input_service.pyperclip.copy"),
+        patch("vocalance.app.services.dictation_flow.text_input_service.pyautogui.keyDown") as key_down,
+        patch("vocalance.app.services.dictation_flow.text_input_service.pyautogui.keyUp") as key_up,
+        patch("vocalance.app.services.dictation_flow.text_input_service.pyautogui.press") as press,
+    ):
+        await text_input.input_text(text="hello", add_trailing_space=False)
+
+    key_down.assert_called_with(modifier)
+    press.assert_any_call("v")
+    key_up.assert_called_with(modifier)

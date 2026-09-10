@@ -7,13 +7,14 @@ import pyautogui
 import pyperclip
 
 from vocalance.app.config.app_config import DictationConfig
+from vocalance.app.config.os_defaults import primary_modifier_key
 from vocalance.app.services.dictation_flow.postprocess.segment_text import clean_dictation_text, should_add_period_before
 from vocalance.app.services.keyboard_input_service import KeyboardInputService
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_BUFFER_TIMEOUT_SEC: float = 1.0
-CTRL_KEY_PRESS_TIMING_SEC: float = 0.01
+MODIFIER_KEY_PRESS_TIMING_SEC: float = 0.01
 CLIPBOARD_READ_MIN_WAIT_SEC: float = 0.05
 
 
@@ -31,6 +32,7 @@ class DictationTextInput:
         self.streaming_buffer: str = ""
         self.buffer_timeout_sec: float = DEFAULT_BUFFER_TIMEOUT_SEC
         self.flush_task: asyncio.Task | None = None
+        self.primary_modifier = primary_modifier_key()
         pyautogui.FAILSAFE = True
         pyautogui.PAUSE = config.pyautogui_pause
 
@@ -94,7 +96,7 @@ class DictationTextInput:
                 logger.warning("Could not read clipboard before copy: %s", exc)
 
             time.sleep(self.config.clipboard_paste_delay_pre)
-            pyautogui.hotkey("ctrl", "c")
+            pyautogui.hotkey(self.primary_modifier, "c")
             time.sleep(max(CLIPBOARD_READ_MIN_WAIT_SEC, self.config.clipboard_paste_delay_post))
 
             captured: str = ""
@@ -153,11 +155,11 @@ class DictationTextInput:
                 return False
 
             time.sleep(self.config.clipboard_paste_delay_pre)
-            pyautogui.keyDown("ctrl")
-            time.sleep(CTRL_KEY_PRESS_TIMING_SEC)
+            pyautogui.keyDown(self.primary_modifier)
+            time.sleep(MODIFIER_KEY_PRESS_TIMING_SEC)
             pyautogui.press("v")
-            time.sleep(CTRL_KEY_PRESS_TIMING_SEC)
-            pyautogui.keyUp("ctrl")
+            time.sleep(MODIFIER_KEY_PRESS_TIMING_SEC)
+            pyautogui.keyUp(self.primary_modifier)
             time.sleep(self.config.clipboard_paste_delay_post)
 
             if original is not None:

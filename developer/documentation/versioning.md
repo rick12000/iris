@@ -3,11 +3,12 @@
 ## Version Number
 
 The canonical version is defined in one place: `version` in `pyproject.toml`. The bootstrap
-script (`scripts/bootstrapping/setup.ps1`) contains a mirrored variable `$VOCALANCE_VERSION`
-that must always match. A CI check (`verify-setup-script-version`) enforces this on every
-commit and will fail the pipeline if the two diverge.
+scripts (`scripts/bootstrapping/setup.ps1` and `scripts/bootstrapping/setup.sh`) contain
+mirrored `VOCALANCE_VERSION` values that must always match. A CI check
+(`verify-setup-script-version`) enforces this on every commit and will fail the pipeline
+if they diverge.
 
-When bumping the version, update both fields together in the same commit.
+When bumping the version, update all three fields together in the same commit.
 
 ## What Triggers a Release
 
@@ -46,8 +47,8 @@ NOTICES/     — third-party licence disclosures
 
 **Standalone scripts** (uploaded separately, not inside the zip):
 
-- `setup.ps1` — installer
-- `cleanup.ps1` — uninstaller
+- `setup.ps1` / `cleanup.ps1` — Windows installer and uninstaller
+- `setup.sh` / `cleanup.sh` — macOS installer and uninstaller
 
 **Checksum**: `vocalance-v{VERSION}.zip.sha256`
 
@@ -57,21 +58,20 @@ Once published, a GitHub release is **immutable** — all assets are fixed artif
 
 ## How the Bootstrap Script Uses Releases
 
-`setup.ps1` is distributed as a standalone release asset rather than bundled in the zip.
-Users fetch it directly from the latest release and run it locally. The script then downloads
-the application zip at a hard-coded URL derived from `$VOCALANCE_VERSION`:
+`setup.ps1` and `setup.sh` are distributed as standalone release assets rather than bundled in the zip.
+Users fetch the script for their OS from the latest release and run it locally. The script then downloads
+the application zip at a hard-coded URL derived from `VOCALANCE_VERSION`:
 
 ```
 https://github.com/rick12000/vocalance/releases/download/v{VOCALANCE_VERSION}/vocalance-v{VOCALANCE_VERSION}.zip
 ```
 
-This means every copy of `setup.ps1` always installs **exactly the version it was shipped
+This means every copy of the installer always installs **exactly the version it was shipped
 with**, regardless of when it is run.
 
-The application is always installed to `C:\Program Files\Vocalance\` — a fixed,
-system-scoped path that requires administrator rights (UAC prompt) and is consistent across all machines.
-The install directory is locked to read/execute for standard users; only administrators and SYSTEM
-can modify its contents. The Start Menu shortcut is written to the same location on every install.
+Windows installs to `%LOCALAPPDATA%\Programs\Vocalance\`. macOS installs to
+`~/Library/Application Support/Vocalance/runtime/` and creates `~/Applications/Vocalance.app`.
+Neither installer requires administrator or root privileges.
 
 After extraction, dependencies are installed with `uv sync --frozen`, which requires the
 `uv.lock` file to be satisfied exactly. If any dependency resolution would deviate from the
@@ -80,7 +80,7 @@ lockfile the install aborts.
 ## Developer Workflow Summary
 
 1. Develop and merge features to `main` freely — no version bump required.
-2. When ready to release, bump `version` in `pyproject.toml` and `$VOCALANCE_VERSION` in
-   `setup.ps1` to the same value in a single PR.
+2. When ready to release, bump `version` in `pyproject.toml` and `VOCALANCE_VERSION` in
+   `setup.ps1` and `setup.sh` to the same value in a single PR.
 3. Merge the PR. CI creates a draft GitHub release automatically.
 4. Add release notes on the GitHub Releases page and publish.

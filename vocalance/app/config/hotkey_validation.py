@@ -2,6 +2,24 @@ from __future__ import annotations
 
 import re
 
+from vocalance.app.config.os_defaults import primary_modifier_key, running_on_macos
+
+
+def custom_hotkey_placeholder() -> str:
+    return f"e.g. {primary_modifier_key()}+alt+7"
+
+
+def custom_hotkey_error_message() -> str:
+    if running_on_macos():
+        modifiers = "ctrl, alt, shift, command, option"
+    else:
+        modifiers = "ctrl, alt, shift, win"
+    return (
+        f"Use letters, numbers, modifiers ({modifiers}) or function keys joined with '+', "
+        f"e.g. {primary_modifier_key()}+alt+7."
+    )
+
+
 MODIFIER_KEYS = frozenset(
     {
         "ctrl",

@@ -25,8 +25,8 @@ Table of Contents
   ``uv``, the UV bootstrap integrity check, and the three-layer integrity control
   applied to AI models downloaded from Hugging Face.
 
-- :doc:`installation_uninstallation`: What ``setup.ps1`` does step-by-step,
-  the privilege model, where files land, and how ``cleanup.ps1`` removes all
+- :doc:`installation_uninstallation`: What ``setup.ps1`` / ``setup.sh`` do step-by-step,
+  the privilege model, where files land, and how ``cleanup.ps1`` / ``cleanup.sh`` remove all
   application data.
 
 - :doc:`input_validation`:  Settings bounds enforcement, storage-layer ingestion

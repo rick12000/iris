@@ -19,7 +19,8 @@ Installation
       pip install .
 
    **With LLM features** — smart dictation and text-amend (requires
-   `Microsoft C++ Build Tools`_ with "Desktop development with C++" workload):
+   `Microsoft C++ Build Tools`_ on Windows with "Desktop development with C++",
+   or Xcode Command Line Tools on macOS):
 
    .. code-block:: bash
 

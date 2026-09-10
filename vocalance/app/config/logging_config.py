@@ -6,6 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from vocalance.app.config.os_defaults import user_data_parent_dir
+
 LOG_FILE_NAME = "app.log"
 
 
@@ -16,7 +18,7 @@ class LoggingConfigModel(BaseModel):
     When disabled, uses NullHandler for complete silence (privacy-first mode).
 
     Attributes:
-        appdata_dir_name: Directory name under %APPDATA% used to resolve the log path.
+        appdata_dir_name: Directory name under the OS user-data parent used to resolve the log path.
         level: Log verbosity level - DEBUG, INFO, WARNING, ERROR, or CRITICAL.
         format: Log message format string following Python logging formatter spec.
         enable_logs: When true, log to stdout and AppData/logs; when false, no logging output (default false).
@@ -37,7 +39,7 @@ def setup_logging(config: LoggingConfigModel) -> None:
     """Setup logging infrastructure with dual console and file handlers.
 
     Configures Python's logging system based on the provided configuration. When
-    enabled, creates a timestamped log directory under %APPDATA%/<appdata_dir_name>/logs/
+    enabled, creates a timestamped log directory under the user-data root logs/
     and configures both console (stdout) and file handlers. When disabled, installs
     a NullHandler for complete silence.
 
@@ -48,13 +50,8 @@ def setup_logging(config: LoggingConfigModel) -> None:
         logging.basicConfig(level=logging.CRITICAL + 1, handlers=[logging.NullHandler()], force=True)
         return
 
-    if os.name == "nt":
-        base = os.environ.get("APPDATA", os.path.expanduser("~"))
-    else:
-        base = os.path.expanduser("~")
-
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = os.path.join(base, config.appdata_dir_name, "logs", timestamp)
+    log_dir = os.path.join(user_data_parent_dir(), config.appdata_dir_name, "logs", timestamp)
     os.makedirs(log_dir, exist_ok=True)
 
     log_file_path = os.path.join(log_dir, LOG_FILE_NAME)

@@ -1,6 +1,5 @@
 import asyncio
 import ctypes
-import ctypes.wintypes
 import logging
 import math
 import threading
@@ -13,6 +12,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPaintEvent, QPen, QShowEvent
 from PySide6.QtWidgets import QApplication, QWidget
 
 from vocalance.app.config.app_config import GlobalAppConfig
+from vocalance.app.config.os_defaults import running_on_macos, running_on_windows
 from vocalance.app.event_bus import EventBus
 from vocalance.app.events.core_events import PerformMouseClickEventData
 from vocalance.app.events.grid_events import GridStateEvent
@@ -39,6 +39,10 @@ WS_EX_NOACTIVATE = 0x08000000
 WM_HOTKEY = 0x0312
 VK_ESCAPE = 0x1B
 HOTKEY_ID_ESCAPE = 1
+MACOS_VK_ESCAPE = 0x35
+CARBON_EVENT_CLASS_KEYBOARD = int.from_bytes(b"keyb", "big")
+CARBON_EVENT_HOT_KEY_PRESSED = 5
+CARBON_HOTKEY_SIGNATURE = int.from_bytes(b"vlce", "big")
 
 
 class QtGridView(QWidget):
@@ -82,13 +86,19 @@ class QtGridView(QWidget):
         self.layout_device_pixel_ratio: float = 1.0
 
         self.escape_hotkey_registered: bool = False
+        self._macos_hotkey_ref = None
+        self._macos_event_handler_ref = None
+        self._macos_event_handler_proc = None
 
-        self.setWindowFlags(
+        window_flags = (
             Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
             | Qt.WindowType.Tool
             | Qt.WindowType.NoDropShadowWindowHint
         )
+        if running_on_macos():
+            window_flags |= Qt.WindowType.WindowTransparentForInput
+        self.setWindowFlags(window_flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
 
@@ -297,7 +307,11 @@ class QtGridView(QWidget):
 
     def showEvent(self, event: QShowEvent) -> None:
         super().showEvent(event)
-        self.configure_win32_passthrough()
+        self.configure_click_through()
+
+    def configure_click_through(self) -> None:
+        if running_on_windows():
+            self.configure_win32_passthrough()
 
     def configure_win32_passthrough(self) -> None:
         """Set WS_EX_TRANSPARENT so Windows excludes the overlay from hit-testing.
@@ -445,28 +459,125 @@ class QtGridView(QWidget):
                 self.overlay_preparing = False
 
     def register_escape_hotkey(self) -> None:
-        """Register Escape as a global hotkey via RegisterHotKey.
+        """Register Escape as a global hotkey while the grid is visible.
 
-        WM_HOTKEY is delivered to this window's message queue without requiring focus or
-        a system-wide keyboard hook, so there is no keylogger-pattern code path and AV
-        tools do not flag it.  If another application has already claimed Escape the
-        registration silently fails; the user can still dismiss via voice command.
+        Windows uses RegisterHotKey (WM_HOTKEY). macOS uses Carbon RegisterEventHotKey.
+        Neither is a system-wide keyboard hook. If registration fails, dismiss via voice.
         """
-        hwnd = int(self.winId())
-        self.escape_hotkey_registered = bool(
-            ctypes.windll.user32.RegisterHotKey(hwnd, HOTKEY_ID_ESCAPE, 0, VK_ESCAPE)
-        )
+        if running_on_windows():
+            hwnd = int(self.winId())
+            self.escape_hotkey_registered = bool(
+                ctypes.windll.user32.RegisterHotKey(hwnd, HOTKEY_ID_ESCAPE, 0, VK_ESCAPE)
+            )
+        elif running_on_macos():
+            self.escape_hotkey_registered = self.register_macos_escape_hotkey()
+        else:
+            self.escape_hotkey_registered = False
         if not self.escape_hotkey_registered:
             self.logger.warning("Escape hotkey unavailable; dismiss the grid via voice command")
+
+    def register_macos_escape_hotkey(self) -> bool:
+        try:
+            class EventTypeSpec(ctypes.Structure):
+                _fields_ = [("eventClass", ctypes.c_uint32), ("eventKind", ctypes.c_uint32)]
+
+            class EventHotKeyID(ctypes.Structure):
+                _fields_ = [("signature", ctypes.c_uint32), ("id", ctypes.c_uint32)]
+
+            carbon = ctypes.CDLL("/System/Library/Frameworks/Carbon.framework/Carbon")
+            carbon.GetApplicationEventTarget.restype = ctypes.c_void_p
+            carbon.GetApplicationEventTarget.argtypes = []
+            carbon.InstallEventHandler.restype = ctypes.c_int32
+            carbon.InstallEventHandler.argtypes = [
+                ctypes.c_void_p,
+                ctypes.c_void_p,
+                ctypes.c_uint32,
+                ctypes.POINTER(EventTypeSpec),
+                ctypes.c_void_p,
+                ctypes.POINTER(ctypes.c_void_p),
+            ]
+            carbon.RegisterEventHotKey.restype = ctypes.c_int32
+            carbon.RegisterEventHotKey.argtypes = [
+                ctypes.c_uint32,
+                ctypes.c_uint32,
+                EventHotKeyID,
+                ctypes.c_void_p,
+                ctypes.c_uint32,
+                ctypes.POINTER(ctypes.c_void_p),
+            ]
+            carbon.RemoveEventHandler.restype = ctypes.c_int32
+            carbon.RemoveEventHandler.argtypes = [ctypes.c_void_p]
+            carbon.UnregisterEventHotKey.restype = ctypes.c_int32
+            carbon.UnregisterEventHotKey.argtypes = [ctypes.c_void_p]
+
+            handler_type = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p)
+
+            def _on_hotkey(_next_handler, _event, _user_data):
+                QTimer.singleShot(0, self.do_hide)
+                return 0
+
+            self._macos_event_handler_proc = handler_type(_on_hotkey)
+            spec = EventTypeSpec(CARBON_EVENT_CLASS_KEYBOARD, CARBON_EVENT_HOT_KEY_PRESSED)
+            handler_ref = ctypes.c_void_p()
+            target = carbon.GetApplicationEventTarget()
+            status = carbon.InstallEventHandler(
+                target,
+                self._macos_event_handler_proc,
+                1,
+                ctypes.byref(spec),
+                None,
+                ctypes.byref(handler_ref),
+            )
+            if status != 0:
+                return False
+            self._macos_event_handler_ref = handler_ref
+
+            hotkey_id = EventHotKeyID(CARBON_HOTKEY_SIGNATURE, HOTKEY_ID_ESCAPE)
+            hotkey_ref = ctypes.c_void_p()
+            status = carbon.RegisterEventHotKey(
+                MACOS_VK_ESCAPE,
+                0,
+                hotkey_id,
+                target,
+                0,
+                ctypes.byref(hotkey_ref),
+            )
+            if status != 0:
+                carbon.RemoveEventHandler(self._macos_event_handler_ref)
+                self._macos_event_handler_ref = None
+                self._macos_event_handler_proc = None
+                return False
+            self._macos_hotkey_ref = hotkey_ref
+            return True
+        except Exception:
+            self.logger.warning("Failed to register macOS Escape hotkey", exc_info=True)
+            return False
 
     def unregister_escape_hotkey(self) -> None:
         if not self.escape_hotkey_registered:
             return
-        ctypes.windll.user32.UnregisterHotKey(int(self.winId()), HOTKEY_ID_ESCAPE)
+        if running_on_windows():
+            ctypes.windll.user32.UnregisterHotKey(int(self.winId()), HOTKEY_ID_ESCAPE)
+        elif running_on_macos():
+            try:
+                carbon = ctypes.CDLL("/System/Library/Frameworks/Carbon.framework/Carbon")
+                carbon.UnregisterEventHotKey.argtypes = [ctypes.c_void_p]
+                carbon.RemoveEventHandler.argtypes = [ctypes.c_void_p]
+                if self._macos_hotkey_ref is not None:
+                    carbon.UnregisterEventHotKey(self._macos_hotkey_ref)
+                if self._macos_event_handler_ref is not None:
+                    carbon.RemoveEventHandler(self._macos_event_handler_ref)
+            except Exception:
+                self.logger.warning("Failed to unregister macOS Escape hotkey", exc_info=True)
+            self._macos_hotkey_ref = None
+            self._macos_event_handler_ref = None
+            self._macos_event_handler_proc = None
         self.escape_hotkey_registered = False
 
     def nativeEvent(self, event_type: bytes, message: Any) -> tuple[bool, int]:
-        if event_type == b"windows_generic_MSG" and self.overlay_active:
+        if running_on_windows() and event_type == b"windows_generic_MSG" and self.overlay_active:
+            import ctypes.wintypes
+
             msg = ctypes.wintypes.MSG.from_address(int(message))
             if msg.message == WM_HOTKEY and msg.wParam == HOTKEY_ID_ESCAPE:
                 QTimer.singleShot(0, self.do_hide)
@@ -574,7 +685,8 @@ class QtGridView(QWidget):
         drag_origin: Optional[Tuple[int, int]],
     ) -> None:
         """Perform pyautogui action for grid cell (physical pixel coordinates)."""
-        ctypes.windll.user32.ClipCursor(None)
+        if running_on_windows():
+            ctypes.windll.user32.ClipCursor(None)
         cx, cy = int(center_x), int(center_y)
         if click_mode == "click":
             pyautogui.moveTo(cx, cy, duration=GRID_CLICK_MOVE_DURATION_S, _pause=False)

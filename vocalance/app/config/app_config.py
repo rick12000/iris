@@ -9,8 +9,9 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from vocalance.app.config.logging_config import LoggingConfigModel
+from vocalance.app.config.os_defaults import APPLICATION_DIR_NAME, application_icon_filename, user_data_root
 
-APPDATA_DIR_NAME = "Vocalance"
+APPDATA_DIR_NAME = APPLICATION_DIR_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -690,7 +691,9 @@ class AppInfoConfig(BaseModel):
     where application state and user data are persisted.
     """
 
-    appdata_dir_name: str = Field(default=APPDATA_DIR_NAME, description="Directory name under %APPDATA% for all runtime data")
+    appdata_dir_name: str = Field(
+        default=APPDATA_DIR_NAME, description="Directory name under the OS user-data parent for all runtime data"
+    )
 
 
 class AssetPathsConfig(BaseModel):
@@ -831,7 +834,7 @@ class AssetPathsConfig(BaseModel):
             Path to application icon or None.
         """
         if self.logo_dir:
-            icon_path: Path = Path(self.logo_dir) / "icon.ico"
+            icon_path: Path = Path(self.logo_dir) / application_icon_filename()
             return str(icon_path)
         return None
 
@@ -1055,8 +1058,7 @@ def load_app_config(config_path: Optional[str] = None, app_info: Optional[AppInf
 def get_default_user_data_root(app_info: AppInfoConfig) -> str:
     """Get default user data root directory based on operating system conventions.
 
-    Uses %APPDATA% on Windows for application data storage, and home directory on
-    Unix-like systems. Appends the configured application name and suffix.
+    Uses %APPDATA% on Windows and ~/Library/Application Support on macOS.
 
     Args:
         app_info: Application info configuration containing name and suffix.
@@ -1064,8 +1066,4 @@ def get_default_user_data_root(app_info: AppInfoConfig) -> str:
     Returns:
         Absolute path to user data root directory.
     """
-    if os.name == "nt":
-        base = os.environ.get("APPDATA", os.path.expanduser("~"))
-    else:
-        base = os.path.expanduser("~")
-    return os.path.join(base, app_info.appdata_dir_name)
+    return user_data_root(app_info.appdata_dir_name)

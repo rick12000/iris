@@ -194,7 +194,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Assert setup.ps1 version matches pyproject.toml
+      - name: Assert setup script versions match pyproject.toml
         run: python3 scripts/ci/assert_setup_script_version_matches.py
 
   draft-release:
@@ -300,6 +300,8 @@ jobs:
           vocalance-v${{ steps.release_check.outputs.current_version }}.zip.sha256
           scripts/bootstrapping/setup.ps1
           scripts/bootstrapping/cleanup.ps1
+          scripts/bootstrapping/setup.sh
+          scripts/bootstrapping/cleanup.sh
         body: |
           *Add release notes before publishing.*
 

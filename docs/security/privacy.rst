@@ -2,7 +2,9 @@ Privacy
 #######
 
 After the initial installation (if following the
-`installation script <https://github.com/rick12000/vocalance/releases/latest/download/setup.ps1>`_),
+Windows `setup.ps1 <https://github.com/rick12000/vocalance/releases/latest/download/setup.ps1>`_
+or macOS `setup.sh <https://github.com/rick12000/vocalance/releases/latest/download/setup.sh>`_
+installation script),
 the application makes no outbound network requests. All speech recognition,
 command execution, dictation, and AI inference run entirely on the host machine.
 
@@ -36,20 +38,24 @@ records security-salient operations (dictation and command execution).
    build. A commit that flips either default to ``True`` will not produce a
    release (see :doc:`releases`).
 
-When developer logging is enabled, output goes to stdout and to:
+When developer logging is enabled, output goes to stdout and to the ``logs``
+directory under the user-data root:
 
 .. code-block:: text
 
-   %APPDATA%\Vocalance\logs\<YYYYMMDD_HHMMSS>\app.log
+   Windows:  %APPDATA%\Vocalance\logs\<YYYYMMDD_HHMMSS>\app.log
+   macOS:    ~/Library/Application Support/Vocalance/logs/<YYYYMMDD_HHMMSS>/app.log
 
 Developer logs may incidentally include dictated phrases or executed command
 names. They are intended for active development only.
 
-When the activity tracker is enabled, it writes one JSON record per event to:
+When the activity tracker is enabled, it writes one JSON record per event to the
+``activity_logs`` directory under the same user-data root:
 
 .. code-block:: text
 
-   %APPDATA%\Vocalance\activity_logs\activity_<YYYYMMDD_HHMMSS>.jsonl
+   Windows:  %APPDATA%\Vocalance\activity_logs\activity_<YYYYMMDD_HHMMSS>.jsonl
+   macOS:    ~/Library/Application Support/Vocalance/activity_logs/activity_<YYYYMMDD_HHMMSS>.jsonl
 
 Each record follows this structure:
 
@@ -103,11 +109,12 @@ Besides logs, the application stores and persists a range of user-specific data.
 
 No dictation outputs or user audio is ever stored on disk.
 
-All of this data is stored and freely auditable by the user at:
+All of this data is stored and freely auditable by the user at the user-data root:
 
 .. code-block:: text
 
-   %APPDATA%\Vocalance\
+   Windows:  %APPDATA%\Vocalance\
+   macOS:    ~/Library/Application Support/Vocalance/
 
 .. admonition:: Data Classification
 
